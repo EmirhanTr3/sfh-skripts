@@ -1,13 +1,13 @@
 @ Info
-	Name: punishments
-	Owner: EmirhanTr3
-	Description:
+    Name: punishments
+    Owner: EmirhanTr3
+    Description:
     - it does what the name says
-	Version: 1.19
-	Dependencies:
-	- Skript-reflect
-	- SkBee
-	Item: diamond sword of infinity
+    Version: 1.19
+    Dependencies:
+    - Skript-reflect
+    - SkBee
+    Item: diamond sword of infinity
 
 @ Code
 #! Punishments
