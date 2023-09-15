@@ -3,6 +3,9 @@
     Owner: EmirhanTr3
     Description:
     - it does what the name says
+    - &cTHIS SKRIPT REQUIRES LUCKPERMS API TO BE INSTALLED ON SKRIPT-REFLECT
+    - &cIF YOU DONT KNOW HOW TO DO IT READ https://tpgamesnl.gitbook.io/skript-reflect/advanced/loading-external-libraries
+    - &cLUCKPERMS JAR: https://luckperms.net/download
     Version: 1.19
     Dependencies:
     - Skript-reflect
