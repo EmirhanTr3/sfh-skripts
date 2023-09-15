@@ -1,0 +1,486 @@
+@ Info
+	Name: punishments
+	Owner: EmirhanTr3
+	Description:
+    - it does what the name says
+	Version: 1.19
+	Dependencies:
+	- Skript-reflect
+	- SkBee
+	Item: diamond sword of infinity
+
+@ Code
+#! Punishments
+#! Made by emirdev
+#! https://github.com/EmirhanTr3/sfh-skripts
+
+options:
+    servername: ServerName
+
+import:
+    org.bukkit.Bukkit
+    org.bukkit.BanList
+    net.luckperms.api.LuckPerms
+    java.util.UUID
+
+condition:
+    patterns:
+        %offlineplayer% has (lp|luckperms) permission %string%
+        %offlineplayer% does(n't| not) have (lp|luckperms) permission %string%
+    check:
+        set {_parsedUUID} to UUID.fromString(uuid of expr-1)
+        set {_perm} to expr-2
+        set {_api} to Bukkit.getServicesManager().getRegistration(LuckPerms.class).getProvider()
+        set {_user} to {_api}.getUserManager().loadUser({_parsedUUID}).get()
+        set {_hasPerm} to {_user}.getCachedData().getPermissionData().checkPermission({_perm}).asBoolean()
+        if matched pattern = 1:
+            {_hasPerm} = true
+            continue
+        else:
+            {_hasPerm} != true
+            continue
+
+local function getPrefix() :: text:
+    return "<##4f4848>&lP<##5f4442>&lu<##703f3c>&ln<##803b36>&li<##903630>&ls<##a1322a>&lh<##b12d24>&lm<##c1291e>&le<##d12418>&ln<##e22012>&lt<##f21b0c>&ls &8>"
+
+function toTimespan(s: string) :: timespan:
+    set {_convertions::*} to split "y|years,mo|months,w|weeks,d|days,h|hours,m|minutes,s|seconds" at ","
+    loop {_convertions::*}:
+        set {_c::*} to split loop-value at "|"
+        if {_s} contains {_c::1}:
+            set {_rs} to "%first element of split {_s} at {_c::1}%%{_c::1}%"
+            replace all {_c::1} with " %{_c::2}%" in {_rs}
+            add ({_rs} parsed as timespan) to {_r}
+            set {_sp::*} to split {_s} at {_c::1}
+            delete {_sp::1}
+            set {_s} to join {_sp::*} by ""
+    return {_r}
+
+local function getReason(m: string, default: string) :: string:
+    replace all "-s " in {_m} with ""
+    replace all "-s" in {_m} with ""
+    if any:
+        {_m} is not set
+        {_m} is ""
+    then:
+        set {_m} to {_default}
+    return {_m}.replace(";", "")
+
+local function sendToAll(msg: string, silent: boolean = false):
+    set {_s} to " &8(Silent)" if {_silent} is true, else ""
+    set {_m} to "%getPrefix()% %{_msg}%%{_s}%"
+    if {_silent} is true:
+        loop all players:
+            loop-player has lp permission "punish.ban"
+            send {_m} to loop-player
+    else:
+        send {_m} to all players
+
+local function getBanMessage(mod: player, r: string) :: string:
+    add "" to {_m::*}
+    add "%getPrefix()% &cYou have been banned from {@servername}." to {_m::*}
+    add "%getPrefix()% &cModerator: &7%{_mod}%" to {_m::*}
+    add "%getPrefix()% &cLength: &7Forever" to {_m::*}
+    add "%getPrefix()% &cReason: &7%{_r}%" to {_m::*}
+    add "" to {_m::*}
+    return join {_m::*} by nl
+
+local function getTempbanMessage(mod: player, t: timespan, r: string) :: string:
+    set {_time} to now
+    add {_t} to {_time}
+    add "" to {_m::*}
+    add "%getPrefix()% &cYou have been temp-banned from {@servername}." to {_m::*}
+    add "%getPrefix()% &cModerator: &7%{_mod}%" to {_m::*}
+    add "%getPrefix()% &cLength: &7%{_t}%" to {_m::*}
+    add "%getPrefix()% &cExpires at: &7%{_time}% GMT" to {_m::*}
+    add "%getPrefix()% &cReason: &7%{_r}%" to {_m::*}
+    add "" to {_m::*}
+    return join {_m::*} by nl
+
+local function getIPBanMessage(mod: player, r: string) :: string:
+    add "" to {_m::*}
+    add "%getPrefix()% &cYou have been IP-Banned from {@servername}." to {_m::*}
+    add "%getPrefix()% &cModerator: &7%{_mod}%" to {_m::*}
+    add "%getPrefix()% &cLength: &7Forever" to {_m::*}
+    add "%getPrefix()% &cReason: &7%{_r}%" to {_m::*}
+    add "" to {_m::*}
+    return join {_m::*} by nl
+
+local function getTempIPBanMessage(mod: player, t: timespan, r: string) :: string:
+    set {_time} to now
+    add {_t} to {_time}
+    add "" to {_m::*}
+    add "%getPrefix()% &cYou have been temporarily IP-Banned from {@servername}." to {_m::*}
+    add "%getPrefix()% &cModerator: &7%{_mod}%" to {_m::*}
+    add "%getPrefix()% &cLength: &7%{_t}%" to {_m::*}
+    add "%getPrefix()% &cExpires at: &7%{_time}% GMT" to {_m::*}
+    add "%getPrefix()% &cReason: &7%{_r}%" to {_m::*}
+    add "" to {_m::*}
+    return join {_m::*} by nl
+
+local function getKickMessage(mod: player, r: string) :: string:
+    add "" to {_m::*}
+    add "%getPrefix()% &cYou have been kicked from {@servername}." to {_m::*}
+    add "%getPrefix()% &cModerator: &7%{_mod}%" to {_m::*}
+    add "%getPrefix()% &cReason: &7%{_r}%" to {_m::*}
+    add "" to {_m::*}
+    return join {_m::*} by nl
+
+local function getMuteMessage(mod: player, t: timespan, r: string) :: string:
+    set {_time} to now
+    add {_t} to {_time}
+    add "" to {_m::*}
+    add "%getPrefix()% &cYou have been muted from {@servername}." to {_m::*}
+    add "%getPrefix()% &cModerator: &7%{_mod}%" to {_m::*}
+    add "%getPrefix()% &cLength: &7%{_t}%" to {_m::*}
+    add "%getPrefix()% &cExpires at: &7%{_time}% GMT (in %difference between {_t} ago and now%)" to {_m::*}
+    add "%getPrefix()% &cReason: &7%{_r}%" to {_m::*}
+    add "" to {_m::*}
+    return join {_m::*} by nl
+
+function getMutedChatMessage(p: player) :: string:
+    set {_mod} to {muted::%uuid of {_p}%::mod}
+    set {_length} to {muted::%uuid of {_p}%::length}
+    set {_expiresat} to {muted::%uuid of {_p}%::expiresat}
+    set {_date} to {muted::%uuid of {_p}%::date}
+    set {_reason} to {muted::%uuid of {_p}%::reason}
+
+    add "" to {_m::*}
+    add "%getPrefix()% &cYou are currently muted from {@servername}." to {_m::*}
+    add "%getPrefix()% &cModerator: &7%{_mod}%" to {_m::*}
+    add "%getPrefix()% &cLength: &7%{_length}%" to {_m::*}
+    add "%getPrefix()% &cExpires at: &7%{_expiresat}% GMT (in %difference between now and {_expiresat}%)" to {_m::*}
+    add "%getPrefix()% &cReason: &7%{_reason}%" to {_m::*}
+    add "" to {_m::*}
+    return join {_m::*} by nl
+
+local function getWarnMessage(mod: player, r: string) :: string:
+    add "" to {_m::*}
+    add "%getPrefix()% &cYou have been warned on {@servername}." to {_m::*}
+    add "%getPrefix()% &cModerator: &7%{_mod}%" to {_m::*}
+    add "%getPrefix()% &cReason: &7%{_r}%" to {_m::*}
+    add "" to {_m::*}
+    return join {_m::*} by nl
+
+command /ban [<offline player>] [<text>]:
+    prefix: network
+    permission: punish.ban
+    trigger:
+        if arg-1 is not set:
+            send "%getPrefix()% &cUsage: &7&o/%command% <player> [-s] [reason]"
+            stop
+
+        if player is arg-1:
+            send "%getPrefix()% &cDid you just try to ban yourself?? bruh"
+            stop
+
+        if arg-1 has lp permission "punish.ban.bypass":
+            send "%getPrefix()% &cYou cannot ban this player."
+            stop
+
+        set {_reason} to getReason(arg-2, "You have been banned.")
+        set {_silent} to true if arg-2 starts with "-s" or "-s ", else false
+
+        ban arg-1 due to getBanMessage(player, {_reason})
+        kick arg-1 due to getBanMessage(player, {_reason})
+        add "ban;%uuid of executor%;;%now formatted human-readable%;%{_reason}%" to {punishmenthistory::%uuid of arg-1%::*}
+
+        sendToAll("&c%arg-1% &7has been banned by &c%executor% &7for &c%{_reason}%", {_silent})
+
+command /tempban [<offline player>] [<text>] [<text>]:
+    prefix: network
+    permission: punish.tempban
+    trigger:
+        if arg-1 or arg-2 is not set:
+            send "%getPrefix()% &cUsage: &7&o/%command% <player> <length> [-s] [reason]"
+            stop
+
+        if player is arg-1:
+            send "%getPrefix()% &cDid you just try to temp-ban yourself?? bruh"
+            stop
+
+        if arg-1 has lp permission "punish.tempban.bypass":
+            send "%getPrefix()% &cYou cannot temp-ban this player."
+            stop
+
+        set {_time} to toTimespan(arg-2)
+        if {_time} is not set:
+            send "%getPrefix()% &cInvalid time specified."
+            stop
+
+        set {_reason} to getReason(arg-3, "You have been temp-banned.")
+        set {_silent} to true if arg-3 starts with "-s" or "-s ", else false
+
+        ban arg-1 due to getTempbanMessage(player, {_time}, {_reason}) for {_time}
+        kick arg-1 due to getTempbanMessage(player, {_time}, {_reason})
+        add "tempban;%uuid of executor%;%{_time}%;%now formatted human-readable%;%{_reason}%" to {punishmenthistory::%uuid of arg-1%::*}
+
+        sendToAll("&c%arg-1% &7has been temp-banned by &c%executor% &7for &c%{_time}% &7for reason &c%{_reason}%", {_silent})
+
+command /unban [<offline player>] [<text>]:
+    prefix: network
+    permission: punish.unban
+    trigger:
+        if arg-1 is not set:
+            send "%getPrefix()% &cUsage: &7&o/%command% <player> [-s]"
+            stop
+
+        if arg-1 is not banned:
+            send "%getPrefix()% &cThis player is not banned."
+            stop
+
+        set {_silent} to true if arg-2 is "-s", else false
+
+        unban arg-1
+        add "unban;%uuid of executor%;;%now formatted human-readable%" to {punishmenthistory::%uuid of arg-1%::*}
+
+        sendToAll("&c%arg-1% &7has been unbanned by &c%executor%", {_silent})
+
+command /banip [<offline player>] [<text>]:
+    prefix: network
+    aliases: ipban
+    permission: punish.banip
+    trigger:
+        if arg-1 is not set:
+            send "%getPrefix()% &cUsage: &7&o/%command% <player> [-s] [reason]"
+            stop
+
+        if player is arg-1:
+            send "%getPrefix()% &cDid you just try to IP-Ban yourself?? bruh"
+            stop
+
+        if arg-1 has lp permission "punish.banip.bypass":
+            send "%getPrefix()% &cYou cannot IP-Ban this player."
+            stop
+
+        set {_reason} to getReason(arg-2, "You have been IP-Banned.")
+        set {_silent} to true if arg-2 starts with "-s" or "-s ", else false
+
+        ban arg-1 due to getIPBanMessage(player, {_reason})
+        IP-ban arg-1 due to getIPBanMessage(player, {_reason})
+        kick arg-1 due to getIPBanMessage(player, {_reason})
+        add "IP-Ban;%uuid of executor%;;%now formatted human-readable%;%{_reason}%" to {punishmenthistory::%uuid of arg-1%::*}
+
+        sendToAll("&c%arg-1% &7has been IP-Banned by &c%executor% &7for &c%{_reason}%", {_silent})
+
+command /tempbanip [<offline player>] [<text>] [<text>]:
+    prefix: network
+    aliases: tempipban
+    permission: punish.tempbanip
+    trigger:
+        if arg-1 or arg-2 is not set:
+            send "%getPrefix()% &cUsage: &7&o/%command% <player> <length> [-s] [reason]"
+            stop
+
+        if player is arg-1:
+            send "%getPrefix()% &cDid you just try to temporarily IP-Ban yourself?? bruh"
+            stop
+
+        if arg-1 has lp permission "punish.tempbanip.bypass":
+            send "%getPrefix()% &cYou cannot temporarily IP-Ban this player."
+            stop
+
+        set {_time} to toTimespan(arg-2)
+        if {_time} is not set:
+            send "%getPrefix()% &cInvalid time specified."
+            stop
+
+        set {_reason} to getReason(arg-3, "You have been temporarily IP-Banned.")
+        set {_silent} to true if arg-3 starts with "-s" or "-s ", else false
+
+        ban arg-1 due to getTempIPBanMessage(player, {_time}, {_reason}) for {_time}
+        IP-ban arg-1 due to getTempIPBanMessage(player, {_time}, {_reason}) for {_time}
+        kick arg-1 due to getTempIPBanMessage(player, {_time}, {_reason})
+        add "Temp IP-Ban;%uuid of executor%;%{_time}%;%now formatted human-readable%;%{_reason}%" to {punishmenthistory::%uuid of arg-1%::*}
+
+        sendToAll("&c%arg-1% &7has been temporarily IP-Banned by &c%executor% &7for &c%{_time}% &7for reason &c%{_reason}%", {_silent})
+
+command /unbanip [<offline player>] [<text>]:
+    prefix: network
+    aliases: wip-unipban
+    permission: punish.unbanip
+    trigger:
+        if arg-1 is not set:
+            send "%getPrefix()% &cUsage: &7&o/%command% <player> [-s]"
+            stop
+
+        set {_BanList} to Bukkit.getServer().getBanList(BanList.Type.IP)
+
+        set {_ip} to Bukkit.getServer().getPluginManager().getPlugin("Essentials").getUser(arg-1).getLastLoginAddress()
+        if {_ip} is not set:
+            send "%getPrefix()% &cIP Address of provided player was not found!"
+            stop
+
+        if {_BanList}.getBanEntry({_ip}) is not set:
+            send "%getPrefix()% &cThis player is not IP-Banned."
+            stop
+
+        set {_silent} to true if arg-2 is "-s", else false
+
+        Bukkit.getServer().getBanList(BanList.Type.NAME).pardon(arg-1)
+        {_BanList}.pardon({_ip})
+        add "unbanip;%uuid of executor%;;%now formatted human-readable%" to {punishmenthistory::%uuid of arg-1%::*}
+
+        sendToAll("&c%arg-1% &7has got their IP unbanned by &c%executor%", {_silent})
+
+command /kick [<player>] [<text>]:
+    prefix: network
+    permission: punish.kick
+    trigger:
+        if arg-1 is not set:
+            send "%getPrefix()% &cUsage: &7&o/%command% <player> [-s] [reason]"
+            stop
+
+        if player is arg-1:
+            send "%getPrefix()% &cDid you just try to kick yourself?? bruh"
+            stop
+
+        if arg-1 has lp permission "punish.kick.bypass":
+            send "%getPrefix()% &cYou cannot kick this player."
+            stop
+
+        set {_reason} to getReason(arg-2, "You have been kicked.")
+        set {_silent} to true if arg-2 starts with "-s" or "-s ", else false
+
+        kick arg-1 due to getKickMessage(player, {_reason})
+        add "kick;%uuid of executor%;;%now formatted human-readable%;%{_reason}%" to {punishmenthistory::%uuid of arg-1%::*}
+
+        sendToAll("&c%arg-1% &7has been kicked by &c%executor% &7for &c%{_reason}%", {_silent})
+
+command /mute [<offline player>] [<text>] [<text>]:
+    prefix: network
+    permission: punish.mute
+    trigger:
+        if arg-1 or arg-2 is not set:
+            send "%getPrefix()% &cUsage: &7&o/%command% <player> <length> [-s] [reason]"
+            stop
+
+        if player is arg-1:
+            send "%getPrefix()% &cDid you just try to mute yourself?? bruh"
+            stop
+
+        if arg-1 has lp permission "punish.mute.bypass":
+            send "%getPrefix()% &cYou cannot mute this player."
+            stop
+
+        set {_time} to toTimespan(arg-2)
+        if {_time} is not set:
+            send "%getPrefix()% &cInvalid time specified."
+            stop
+
+        set {_reason} to getReason(arg-3, "You have been muted.")
+        set {_silent} to true if arg-3 starts with "-s" or "-s ", else false
+        
+        set {_expiresat} to now
+        add {_time} to {_expiresat}
+
+        set {muted::%uuid of arg-1%::active} to true
+        set {muted::%uuid of arg-1%::mod} to player
+        set {muted::%uuid of arg-1%::length} to {_time}
+        set {muted::%uuid of arg-1%::expiresat} to {_expiresat}
+        set {muted::%uuid of arg-1%::date} to now
+        set {muted::%uuid of arg-1%::reason} to {_reason}
+        add "mute;%uuid of executor%;%{_time}%;%now formatted human-readable%;%{_reason}%" to {punishmenthistory::%uuid of arg-1%::*}
+
+        sendToAll("&c%arg-1% &7has been muted by &c%executor% &7for &c%{_time}% &7for reason &c%{_reason}%", {_silent})
+        send getMuteMessage(player, {_time}, {_reason}) to arg-1
+
+command /unmute [<offline player>] [<text>]:
+    prefix: network
+    permission: punish.unmute
+    trigger:
+        if arg-1 is not set:
+            send "%getPrefix()% &cUsage: &7&o/%command% <player> [-s]"
+            stop
+
+        if {muted::%uuid of arg-1%::active} is not set:
+            send "%getPrefix()% &cThis player is not muted."
+            stop
+
+        set {_silent} to true if arg-2 is "-s", else false
+
+        delete {muted::%uuid of arg-1%::*}
+        add "unmute;%uuid of executor%;;%now formatted human-readable%" to {punishmenthistory::%uuid of arg-1%::*}
+
+        sendToAll("&c%arg-1% &7has been unmuted by &c%executor%", {_silent})
+
+command /warn [<offline player>] [<text>]:
+    prefix: network
+    permission: punish.warn
+    trigger:
+        set {_reason} to getReason(arg-2, "")
+        if any:
+            arg-1 or arg-2 is not set
+            {_reason} is ""
+        then:
+            send "%getPrefix()% &cUsage: &7&o/%command% <player> [-s] <reason>"
+            stop
+
+        if player is arg-1:
+            send "%getPrefix()% &cDid you just try to warn yourself?? bruh"
+            stop
+
+        if arg-1 has lp permission "punish.warn.bypass":
+            send "%getPrefix()% &cYou cannot warn this player."
+            stop
+
+        set {_silent} to true if arg-2 starts with "-s" or "-s ", else false
+
+        add "warn;%uuid of executor%;;%now formatted human-readable%;%{_reason}%" to {punishmenthistory::%uuid of arg-1%::*}
+
+        sendToAll("&c%arg-1% &7has been warned by &c%executor% &7for &c%{_reason}%", {_silent})
+        send getWarnMessage(player, {_reason}) to arg-1
+
+on chat with priority lowest:
+    {muted::%uuid of player%::active} is set
+    if {muted::%uuid of player%::expiresat} < now:
+        delete {muted::%uuid of player%::*}
+        stop
+    cancel event
+    send getMutedChatMessage(player)
+
+command /history [<offline player>]:
+    prefix: network
+    permission: punish.history
+    trigger:
+        if arg-1 is not set:
+            send "%getPrefix()% &cUsage: &7&o/%command% <player>"
+            stop
+
+        if size of {punishmenthistory::%uuid of arg-1%::*} = 0:
+            send "%getPrefix()% &cThis player has no punishment history."
+            stop
+
+        loop {punishmenthistory::%uuid of arg-1%::*}:
+            set {_h::*} to split loop-value at ";"
+            set {_type} to {_h::1}
+            set {_mod} to ({_h::2} parsed as offline player) ? ("CONSOLE" parsed as offline player)
+            set {_length} to {_h::3}
+            set {_date} to {_h::4}
+            set {_reason} to {_h::5}
+            delete {_lore::*}
+
+            set {_i} to (skull of {_mod}) named "&c%{_mod}%"
+            add "&cType: &7%{_type} in strict proper case%" to {_lore::*}
+            if all:
+                {_length} is set
+                {_length} is not ""
+            then:
+                add "&cLength: &7%{_length}%" to {_lore::*}
+            if {_reason} is set:
+                add "&cReason: &7%{_reason}%" to {_lore::*}
+            add "&cDate: &7%{_date}%" to {_lore::*}
+            set (lore of {_i}) to {_lore::*}
+            
+            add {_i} to {_heads::*}
+
+        set (metadata value "phistory" of player) to chest inventory with 6 rows named "&cHistory of %arg-1%"
+        set slot (integers between 0 and 8) of (metadata value "phistory" of player) to red stained glass pane named "&c"
+        set slot (integers between 45 and 53) of (metadata value "phistory" of player) to red stained glass pane named "&c"
+        loop {_heads::*}:
+            set slot (8 + loop-index parsed as integer) of (metadata value "phistory" of player) to loop-value
+        open (metadata value "phistory" of player) to player
+
+on inventory click:
+    event-inventory = metadata value "phistory" of player
+    cancel event
