@@ -163,7 +163,7 @@ local function getWarnMessage(mod: player, r: string) :: string:
     return join {_m::*} by nl
 
 command /ban [<offline player>] [<text>]:
-    prefix: network
+    prefix: punishments
     permission: punish.ban
     trigger:
         if arg-1 is not set:
@@ -188,7 +188,7 @@ command /ban [<offline player>] [<text>]:
         sendToAll("&c%arg-1% &7has been banned by &c%executor% &7for &c%{_reason}%", {_silent})
 
 command /tempban [<offline player>] [<text>] [<text>]:
-    prefix: network
+    prefix: punishments
     permission: punish.tempban
     trigger:
         if arg-1 or arg-2 is not set:
@@ -218,7 +218,7 @@ command /tempban [<offline player>] [<text>] [<text>]:
         sendToAll("&c%arg-1% &7has been temp-banned by &c%executor% &7for &c%{_time}% &7for reason &c%{_reason}%", {_silent})
 
 command /unban [<offline player>] [<text>]:
-    prefix: network
+    prefix: punishments
     permission: punish.unban
     trigger:
         if arg-1 is not set:
@@ -237,7 +237,7 @@ command /unban [<offline player>] [<text>]:
         sendToAll("&c%arg-1% &7has been unbanned by &c%executor%", {_silent})
 
 command /banip [<offline player>] [<text>]:
-    prefix: network
+    prefix: punishments
     aliases: ipban
     permission: punish.banip
     trigger:
@@ -264,7 +264,7 @@ command /banip [<offline player>] [<text>]:
         sendToAll("&c%arg-1% &7has been IP-Banned by &c%executor% &7for &c%{_reason}%", {_silent})
 
 command /tempbanip [<offline player>] [<text>] [<text>]:
-    prefix: network
+    prefix: punishments
     aliases: tempipban
     permission: punish.tempbanip
     trigger:
@@ -296,7 +296,7 @@ command /tempbanip [<offline player>] [<text>] [<text>]:
         sendToAll("&c%arg-1% &7has been temporarily IP-Banned by &c%executor% &7for &c%{_time}% &7for reason &c%{_reason}%", {_silent})
 
 command /unbanip [<offline player>] [<text>]:
-    prefix: network
+    prefix: punishments
     aliases: wip-unipban
     permission: punish.unbanip
     trigger:
@@ -324,7 +324,7 @@ command /unbanip [<offline player>] [<text>]:
         sendToAll("&c%arg-1% &7has got their IP unbanned by &c%executor%", {_silent})
 
 command /kick [<player>] [<text>]:
-    prefix: network
+    prefix: punishments
     permission: punish.kick
     trigger:
         if arg-1 is not set:
@@ -348,7 +348,7 @@ command /kick [<player>] [<text>]:
         sendToAll("&c%arg-1% &7has been kicked by &c%executor% &7for &c%{_reason}%", {_silent})
 
 command /mute [<offline player>] [<text>] [<text>]:
-    prefix: network
+    prefix: punishments
     permission: punish.mute
     trigger:
         if arg-1 or arg-2 is not set:
@@ -386,7 +386,7 @@ command /mute [<offline player>] [<text>] [<text>]:
         send getMuteMessage(player, {_time}, {_reason}) to arg-1
 
 command /unmute [<offline player>] [<text>]:
-    prefix: network
+    prefix: punishments
     permission: punish.unmute
     trigger:
         if arg-1 is not set:
@@ -405,7 +405,7 @@ command /unmute [<offline player>] [<text>]:
         sendToAll("&c%arg-1% &7has been unmuted by &c%executor%", {_silent})
 
 command /warn [<offline player>] [<text>]:
-    prefix: network
+    prefix: punishments
     permission: punish.warn
     trigger:
         set {_reason} to getReason(arg-2, "")
@@ -440,7 +440,7 @@ on chat with priority lowest:
     send getMutedChatMessage(player)
 
 command /history [<offline player>]:
-    prefix: network
+    prefix: punishments
     permission: punish.history
     trigger:
         if arg-1 is not set:
