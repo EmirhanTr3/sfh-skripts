@@ -8,8 +8,9 @@
     - &cLUCKPERMS JAR: https://luckperms.net/download
     Version: 1.19
     Dependencies:
-    - Skript-reflect
+    - Skript-Reflect
     - SkBee
+    - LuckPerms
     Item: diamond sword of infinity
 
 @ Code
