@@ -1,0 +1,145 @@
+@ Info
+    Name: chatcolor
+    Owner: EmirhanTr3
+    Description:
+    - Lets you change chat colors.
+    - To use this you have to make a chat skript and use getChatColor(player) right before the message.
+    Version: 1.19
+    Dependencies:
+    - Skript-Reflect
+    - SkBee
+    Item: light blue dye of infinity
+
+@ Code
+#! Chat Color
+#! Made by emirdev
+#! https://github.com/EmirhanTr3/sfh-skripts
+
+command /chatcolor:
+    aliases: /chatcolour
+    permission: *
+    trigger:
+        openChatColorGui(player)
+
+local function getPrefix() :: string:
+    return "<##00FFDD>&lC<##00FAE0>&lh<##00F5E4>&la<##00F0E7>&lt<##00EBEB>&l <##00E6EE>&lC<##00E0F1>&lo<##00DBF5>&ll<##00D6F8>&lo<##00D1FC>&lr<##00CCFF>&ls &8>"
+
+local function addChatColorItem(p: player, s: integer, color: string, i: item):
+    if {_color} is "customhex":
+        set {_customhex} to {chatcolor::%uuid of {_p}%::customhex} ? "<##00FFAA>"
+        set (name of {_i}) to "%{_customhex}%%name of {_i}%"
+        set {_currenthex} to uppercase {_customhex}.replaceAll("§", "").replaceAll("x", "")
+        add "<##00FFAA>Current Hex: %{_customhex}%&##%{_currenthex}%" to (lore of {_i})
+    else:
+        set (name of {_i}) to "%{_color}%%name of {_i}%"
+
+    if {_p} does not have permission "chatcolor.%{_color}%":
+        set {_i} to barrier named (name of {_i}) with lore "&cLocked."
+        set tag "cc;locked" of (nbt of {_i}) to 1
+
+    if {chatcolor::%uuid of {_p}%} is {_color}:
+        enchant {_i} with infinity
+        if {_color} is "customhex":
+            add "&bCurrently using. (Click to edit)" to (lore of {_i})
+        else:
+            add "&bCurrently using." to (lore of {_i})
+            set tag "cc;using" of (nbt of {_i}) to 1
+
+    set tag "cc;color" of (nbt of {_i}) to {_color}
+    set slot {_s} of (metadata value "chatcolor" of {_p}) to ({_i} with all flags hidden)
+
+local function openChatColorGui(p: player):
+    set (metadata value "chatcolor" of {_p}) to chest inventory with 6 rows named "          <##00FFAA>🖌 Chat Colors 🖌"
+    set slot (integers between 1 and 7), (integers between 46 and 52), 9,18,27,36, 17,26,35,44 of (metadata value "chatcolor" of {_p}) to light blue stained glass pane named "&b"
+    set slot 8,45,53 of (metadata value "chatcolor" of {_p}) to lime stained glass pane named "&b"
+    set slot 0 of (metadata value "chatcolor" of {_p}) to red stained glass pane named "<##DD0000>Reset chat color."
+
+    addChatColorItem({_p}, 10, "&c", red dye named "Red")
+    addChatColorItem({_p}, 11, "&6", orange dye named "Orange")
+    addChatColorItem({_p}, 12, "&e", yellow dye named "Yellow")
+    addChatColorItem({_p}, 13, "&a", lime dye named "Lime")
+    addChatColorItem({_p}, 14, "&2", green dye named "Green")
+    addChatColorItem({_p}, 15, "&3", cyan dye named "Cyan")
+    addChatColorItem({_p}, 16, "&b", light blue dye named "Light Blue")
+    addChatColorItem({_p}, 19, "&9", blue dye named "Blue")
+    addChatColorItem({_p}, 20, "&5", purple dye named "Purple")
+    addChatColorItem({_p}, 21, "&d", pink dye named "Pink")
+    addChatColorItem({_p}, 22, "&f", white dye named "White")
+    addChatColorItem({_p}, 23, "&7", light gray dye named "Gray")
+    addChatColorItem({_p}, 24, "&8", gray dye named "Dark Gray")
+    addChatColorItem({_p}, 25, "&0", black dye named "Black")
+
+    addChatColorItem({_p}, 40, "customhex", paper named "Custom Hex")
+
+    open (metadata value "chatcolor" of {_p}) to {_p}
+
+on inventory click:
+    event-inventory = metadata value "chatcolor" of player
+    cancel event
+    if index of event-slot = 0:
+        delete {chatcolor::%uuid of player%}
+        send "%getPrefix()% <##00FFAA>You are now using the default chat color." to player
+        openChatColorGui(player)
+
+    tag "cc;using" of (nbt of event-item) is not set
+    tag "cc;locked" of (nbt of event-item) is not set
+
+    set {_color} to tag "cc;color" of (nbt of event-item)
+    {_color} is set
+    
+    if {_color} is "customhex":
+        if any:
+            {chatcolor::%uuid of player%} is {_color}
+            {chatcolor::%uuid of player%::customhex} is not set
+        then:
+            close inventory of player
+            set {-chatcolor_chat_customhex::%uuid of player%} to true
+            send "%nl%%getPrefix()% <##00FFAA>Type your custom hex color code in chat.%nl%%getPrefix()% <##00FFAA>Type <##FF1111>cancel <##00FFAA>to cancel this operation.%nl%"
+        else:
+            set {chatcolor::%uuid of player%} to "customhex"
+            send colored "%getPrefix()% <##00FFAA>You are now using %{chatcolor::%uuid of player%::customhex}%Custom Hex <##00FFAA>chat color." to player
+            openChatColorGui(player)
+        stop
+
+    set {chatcolor::%uuid of player%} to {_color}
+    send "%getPrefix()% <##00FFAA>You are now using %{_color}%%uncolored (name of event-item)% <##00FFAA>chat color." to player
+
+    openChatColorGui(player)
+
+function getChatColor(p: player, def: string = "&f") :: string:
+    return chatcolor of {_p} with default {_def}
+
+expression:
+    patterns:
+        chat[ ]colo[u]r of %player% [with default %-string%]
+        %player%'s chat[ ]colo[u]r [with default %-string%]
+    get:
+        set {_p} to expr-1
+        set {_def} to expr-2 ? "&f"
+        
+        if {chatcolor::%uuid of {_p}%} is "customhex":
+            return {chatcolor::%uuid of {_p}%::customhex} ? {_def}
+        return {chatcolor::%uuid of {_p}%} ? {_def}
+
+on chat:
+    {-chatcolor_chat_customhex::%uuid of player%} is set
+    cancel event
+    if message is "cancel":
+        send "%getPrefix()% <##FF3333>Your chat color was not changed." to player
+        delete {-chatcolor_chat_customhex::%uuid of player%}
+        wait 1 ticks
+        openChatColorGui(player)
+        stop
+    if message.matches("&##([a-fA-F0-9]{6})") is false:
+        send "%getPrefix()% <##FF3333>The hex has to be formatted like &##FFFFFF" to player
+        stop
+    set {_color} to message.replaceAll("&##([a-fA-F0-9]{6})", "<##$1>")
+    set {chatcolor::%uuid of player%} to "customhex"
+    set {chatcolor::%uuid of player%::customhex} to colored {_color}
+    delete {-chatcolor_chat_customhex::%uuid of player%}
+    send colored "%getPrefix()% <##00FFAA>You are now using %{_color}%Custom Hex <##00FFAA>chat color." to player
+    wait 1 ticks
+    openChatColorGui(player)
+
+on disconnect:
+    delete {-chatcolor_chat_customhex::%uuid of player%}
